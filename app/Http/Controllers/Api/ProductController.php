@@ -18,12 +18,45 @@ class ProductController extends Controller
 
     public function index()
     {
-        return $this->productService->getAllProducts();
+        try {
+            $products = $this->productService->getAllProducts();
+            return response()->json([
+                "status" => "success",
+                "message" => "Products retrieved successfully",
+                "data" => $products
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => "error",
+                "message" => "Server error",
+                "data" => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function show($id)
     {
-        return $this->productService->getProductById($id);
+        try {
+            $product = $this->productService->getProductById($id);
+            if (!$product) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "Product not found",
+                    "data" => null
+                ], 404);
+            }
+            return response()->json([
+                "status" => "success",
+                "message" => "Product retrieved successfully",
+                "data" => $product
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => "error",
+                "message" => "Server error",
+                "data" => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function store(Request $request)
@@ -31,25 +64,32 @@ class ProductController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'price' => 'required|numeric',
-            'image' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'product_category_id' => 'required|exists:category_products,id'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Validation error',
-                'data' => $validator->errors()
-            ], 422);
+                "status" => "error",
+                "message" => "Bad request",
+                "data" => $validator->errors()
+            ], 400);
         }
 
-        $data = $request->all();
-
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image');
+        try {
+            $product = $this->productService->createProduct($request->all());
+            return response()->json([
+                "status" => "success",
+                "message" => "Product created successfully",
+                "data" => $product
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => "error",
+                "message" => "Server error",
+                "data" => $e->getMessage()
+            ], 500);
         }
-
-        return $this->productService->createProduct($data);
     }
 
     public function update(Request $request, $id)
