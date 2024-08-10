@@ -80,6 +80,14 @@ class ProductController extends Controller
 
         $updatedProduct = $this->productService->updateProduct($id, $data);
 
+        if (!$updatedProduct) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Product not found',
+                'data' => null
+            ], 404);
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Product updated successfully',
@@ -87,9 +95,28 @@ class ProductController extends Controller
         ], 200);
     }
 
-
     public function destroy($id)
     {
-        return $this->productService->deleteProduct($id);
+        try {
+            $product = $this->productService->deleteProduct($id);
+            if (!$product) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "Product not found",
+                    "data" => null
+                ], 404);
+            }
+            return response()->json([
+                "status" => "success",
+                "message" => "Product deleted successfully",
+                "data" => null
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => "error",
+                "message" => "Server error",
+                "data" => $e->getMessage()
+            ], 500);
+        }
     }
 }
